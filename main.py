@@ -1,8 +1,12 @@
 #!/usr/src/env python3
 
+import argparse
+import random
+
 import pygame
 from pygame.locals import *
 import numpy as np
+
 
 BLACK = (0,0,0)
 WHITE = (255,255,255)
@@ -23,6 +27,12 @@ x_img = pygame.image.load("./x.png")
 x_img = pygame.transform.scale(x_img, (150,150))
 o_img = pygame.image.load("./o.png")
 o_img = pygame.transform.scale(o_img, (150,150))
+x_hover = pygame.image.load("./x_hover.png")
+x_hover = pygame.transform.scale(x_hover, (150, 150))
+o_hover = pygame.image.load("./o_hover.png")
+o_hover = pygame.transform.scale(o_hover, (150, 150))
+
+hovers = {1:x_hover, 2:o_hover}
 
 def draw_screen():
     for index, val in enumerate(board.flat):
@@ -43,6 +53,11 @@ def check_win():
 
 def main():
     global board
+    global args
+    parser = argparse.ArgumentParser(description="Controls for PySnake")
+    parser.add_argument("--training", action="store_true",
+                        help="Add if training")
+    args = parser.parse_args()
     done = False
     box_tup = None
     side = 1
@@ -68,21 +83,33 @@ def main():
             box_tup = (2,2)
         else:
             box_tup = (None, None)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
-                pygame.quit()
-                quit()
-            elif event.type == pygame.MOUSEBUTTONUP and box_tup[0] != None:
-                if not board[box_tup[1], box_tup[0]]:
-                    board[box_tup[1], box_tup[0]] = side
-                    side = 2 if side == 1 else 1
+        if not args.training or side==1:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
+                    pygame.quit()
+                    quit()
+                elif event.type == pygame.MOUSEBUTTONUP and box_tup[0] != None:
+                    if not board[box_tup[1], box_tup[0]]:
+                        board[box_tup[1], box_tup[0]] = side
+                        side = 2 if side == 1 else 1
+        else:
+            ind_1 = random.randint(0,2)
+            ind_2 = random.randint(0,2)
+            while board[ind_1, ind_2] != 0:
+                ind_1 = random.randint(0, 2)
+                ind_2 = random.randint(0, 2)
+            board[ind_1, ind_2] = side
+            side = 1
         clock.tick(30)
         screen.fill(WHITE)
         pygame.draw.rect(screen, BLACK, [size[0]//3, 0, 2, size[1]])
         pygame.draw.rect(screen, BLACK, [size[0]//3*2, 0, 2, size[1]])
         pygame.draw.rect(screen, BLACK, [0, size[1]//3, size[0], 2])
         pygame.draw.rect(screen, BLACK, [0, size[1]//3*2, size[0], 2])
+        
+        if box_tup[0] != None and board[box_tup[1], box_tup[0]] == 0:
+            screen.blit(hovers[side], (coords[box_tup[1]*3+box_tup[0]]))
+
         draw_screen()
         val = check_win()
         if val == 1:
